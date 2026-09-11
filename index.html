@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Factura · BM Estudio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #e6e6e6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 12px;
+        }
+
+        .ticket {
+            max-width: 80mm;
+            width: 100%;
+            background: #ffffff;
+            padding: 10px 12px 16px 12px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            margin: 0 auto;
+        }
+
+        .ticket * {
+            font-family: 'Courier New', Courier, 'Lucida Sans Typewriter', monospace;
+            line-height: 1.3;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .logo-container svg {
+            width: 100%;
+            max-width: 180px;
+            height: auto;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            background: #fafafa;
+        }
+
+        .propietario {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin: 4px 0 2px 0;
+            text-transform: uppercase;
+        }
+
+        .telefono {
+            text-align: center;
+            font-size: 14px;
+            margin: 0 0 4px 0;
+        }
+
+        .localidad {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            border-bottom: 1px dotted #888;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* ---- DATOS DEL CLIENTE ---- */
+        .cliente {
+            font-size: 12px;
+            margin: 6px 0 8px 0;
+            padding: 6px 8px;
+            border: 1px dashed #999;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+
+        .cliente .campo {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 3px;
+            gap: 4px;
+        }
+
+        .cliente .campo:last-child {
+            margin-bottom: 0;
+        }
+
+        .cliente .campo label {
+            font-weight: bold;
+            font-size: 11px;
+            white-space: nowrap;
+            color: #333;
+            min-width: 55px;
+        }
+
+        .cliente .campo input {
+            flex: 1;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            border: none;
+            background: transparent;
+            border-bottom: 1px dotted #888;
+            padding: 1px 2px;
+            outline: none;
+            min-width: 0;
+        }
+
+        .cliente .campo input:focus {
+            border-bottom-color: #000;
+            background: #fffbe6;
+        }
+
+        .fecha {
+            font-size: 11px;
+            text-align: right;
+            margin: 4px 0 2px 0;
+            color: #333;
+        }
+
+        .fecha input {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            border: none;
+            background: transparent;
+            border-bottom: 1px dotted #888;
+            text-align: right;
+            width: 120px;
+            padding: 1px 2px;
+            outline: none;
+        }
+
+        .divider {
+            border: none;
+            border-top: 2px dashed #333;
+            margin: 6px 0 10px 0;
+        }
+
+        .detalle {
+            font-size: 13px;
+            width: 100%;
+            margin: 6px 0;
+        }
+
+        .detalle .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px dotted #aaa;
+            gap: 6px;
+        }
+
+        .detalle .row input {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            border: none;
+            background: transparent;
+            padding: 2px 0;
+            outline: none;
+            border-bottom: 1px dashed #888;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .detalle .row input.descripcion {
+            flex: 1;
+        }
+
+        .detalle .row input:focus {
+            border-bottom-color: #000;
+        }
+
+        .acciones {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 12px 0 8px 0;
+            flex-wrap: wrap;
+        }
+
+        .acciones button {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 6px 12px;
+            border: 1px solid #333;
+            background: #f0f0f0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .acciones button:hover {
+            background: #ddd;
+        }
+
+        .acciones button.primary {
+            background: #222;
+            color: white;
+            border-color: #222;
+        }
+
+        .acciones button.primary:hover {
+            background: #444;
+        }
+
+        .acciones button.whatsapp {
+            background: #25D366;
+            color: white;
+            border-color: #1da851;
+        }
+
+        .acciones button.whatsapp:hover {
+            background: #1da851;
+        }
+
+        .acciones button.image-share {
+            background: #FF9800;
+            color: white;
+            border-color: #e68900;
+        }
+
+        .acciones button.image-share:hover {
+            background: #e68900;
+        }
+
+        .total {
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid #111;
+            border-bottom: 2px solid #111;
+            padding: 8px 0;
+            margin: 10px 0 6px 0;
+        }
+
+        .total .label {
+            letter-spacing: 2px;
+        }
+
+        .total input {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            background: transparent;
+            border-bottom: 1px dotted #333;
+            text-align: right;
+            width: 100px;
+            padding: 0 4px;
+            outline: none;
+        }
+
+        .total input:focus {
+            border-bottom-color: #000;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #333;
+            margin-top: 12px;
+            border-top: 1px dashed #aaa;
+            padding-top: 8px;
+        }
+
+        .footer small {
+            display: block;
+            font-size: 10px;
+            color: #555;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .ticket {
+                max-width: 100%;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 6px 8px;
+                margin: 0;
+            }
+            .logo-container svg {
+                box-shadow: none;
+            }
+            .divider {
+                border-top-color: #000;
+            }
+            .total {
+                border-color: #000;
+            }
+            .total input {
+                border-bottom: none !important;
+                font-weight: bold;
+                color: #000;
+                background: transparent;
+                pointer-events: none;
+            }
+            .detalle .row {
+                border-bottom-color: #666;
+            }
+            .detalle .row input {
+                border: none !important;
+                border-bottom: none !important;
+                background: transparent !important;
+                color: #000 !important;
+                padding: 0 !important;
+                pointer-events: none;
+            }
+            .cliente {
+                border-color: #666;
+                background: transparent;
+            }
+            .cliente .campo input {
+                border-bottom: none !important;
+                color: #000;
+            }
+            .fecha input {
+                border-bottom: none !important;
+                color: #000;
+            }
+            .acciones {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .ticket {
+                padding: 6px 6px 10px 6px;
+            }
+            .propietario {
+                font-size: 14px;
+            }
+            .acciones button {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket" id="ticket">
+
+        <!-- LOGO CIRCULAR -->
+        <div class="logo-container">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logo BM Estudio">
+                <circle cx="100" cy="100" r="95" fill="#f4f4f4" stroke="#222" stroke-width="3" />
+                <text x="100" y="80" font-family="'Courier New', Courier, monospace" font-size="44" font-weight="900" fill="#1a1a1a" text-anchor="middle" letter-spacing="2">BM</text>
+                <text x="100" y="110" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#444" text-anchor="middle" letter-spacing="1">estudio</text>
+                <line x1="40" y1="122" x2="160" y2="122" stroke="#333" stroke-width="1.5" stroke-dasharray="4 2" />
+                <text x="100" y="142" font-family="'Courier New', Courier, monospace" font-size="10" font-weight="bold" fill="#222" text-anchor="middle" letter-spacing="0.5">Arte en alta definicion</text>
+                <text x="100" y="165" font-family="'Courier New', Courier, monospace" font-size="11" font-weight="600" fill="#1a1a1a" text-anchor="middle">7664-9858</text>
+                <text x="100" y="182" font-family="'Courier New', Courier, monospace" font-size="11" font-weight="600" fill="#1a1a1a" text-anchor="middle">5830-6623</text>
+            </svg>
+        </div>
+
+        <!-- DATOS DEL PROPIETARIO -->
+        <div class="propietario">⭐ BRENER MORENO ⭐</div>
+        <div class="telefono">📞 5830-6623</div>
+        <div class="localidad">📍 Somotillo</div>
+
+        <hr class="divider">
+
+        <!-- DATOS DEL CLIENTE -->
+        <div class="cliente">
+            <div class="campo">
+                <label>Cliente:</label>
+                <input type="text" id="clienteNombre" placeholder="Nombre del cliente">
+            </div>
+            <div class="campo">
+                <label>Teléfono:</label>
+                <input type="text" id="clienteTelefono" placeholder="Teléfono">
+            </div>
+            <div class="campo">
+                <label>Dirección:</label>
+                <input type="text" id="clienteDireccion" placeholder="Dirección">
+            </div>
+        </div>
+
+        <!-- FECHA -->
+        <div class="fecha">
+            <label>Fecha: </label>
+            <input type="text" id="fechaInput">
+        </div>
+
+        <hr class="divider">
+
+        <!-- DETALLE DE PRODUCTOS -->
+        <div class="detalle" id="productosContainer"></div>
+
+        <!-- TOTAL -->
+        <div class="total">
+            <span class="label">TOTAL</span>
+            <input type="text" id="totalInput" placeholder="C$ 0.00" value="C$ 0.00">
+        </div>
+
+        <!-- BOTONES -->
+        <div class="acciones">
+            <button onclick="agregarFila()">➕ Agregar producto</button>
+            <button onclick="generarPDF()" class="primary">📄 Guardar PDF</button>
+            <button onclick="compartirImagen()" class="image-share">📷 Compartir imagen</button>
+            <button onclick="compartirWhatsAppPDF()" class="whatsapp">💬 WhatsApp (PDF)</button>
+        </div>
+
+        <!-- CONTACTO -->
+        <div style="font-size:12px; text-align:center; margin: 2px 0 4px 0; color:#222;">
+            <span>📱 7664-9858 · 5830-6623</span>
+        </div>
+
+        <!-- PIE DE FACTURA -->
+        <div class="footer">
+            <span>✔ Factura digital · BM Estudio</span>
+            <small>Somotillo · Arte en alta definicion · Gracias por su preferencia</small>
+        </div>
+
+    </div>
+
+    <script>
+        // Inicializar filas
+        function inicializarFilas(cantidad = 5) {
+            const container = document.getElementById('productosContainer');
+            container.innerHTML = '';
+            for (let i = 0; i < cantidad; i++) {
+                const conPlaceholder = (i < 2);
+                agregarFila(false, conPlaceholder);
+            }
+        }
+
+        function agregarFila(enfocar = true, conPlaceholder = false) {
+            const container = document.getElementById('productosContainer');
+            const row = document.createElement('div');
+            row.className = 'row';
+
+            const descInput = document.createElement('input');
+            descInput.type = 'text';
+            descInput.className = 'descripcion';
+            descInput.placeholder = conPlaceholder ? 'Descripción del producto' : '';
+
+            row.appendChild(descInput);
+            container.appendChild(row);
+
+            if (enfocar) {
+                descInput.focus();
+            }
+        }
+
+        // Poner la fecha actual en formato dd/mm/aaaa hh:mm
+        function setFechaActual() {
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const anio = now.getFullYear();
+            const hora = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('fechaInput').value = `${dia}/${mes}/${anio} ${hora}:${min}`;
+        }
+
+        // --- Captura del ticket ---
+        function capturarTicket() {
+            return new Promise((resolve, reject) => {
+                const ticket = document.getElementById('ticket');
+                const acciones = document.querySelector('.acciones');
+                acciones.style.display = 'none';
+
+                html2canvas(ticket, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    width: ticket.scrollWidth,
+                    height: ticket.scrollHeight
+                }).then(canvas => {
+                    acciones.style.display = 'flex';
+                    resolve(canvas);
+                }).catch(error => {
+                    acciones.style.display = 'flex';
+                    reject(error);
+                });
+            });
+        }
+
+        // --- Guardar PDF ---
+        function generarPDF() {
+            capturarTicket().then(canvas => {
+                const imgWidth = 80;
+                const imgHeight = (canvas.height / canvas.width) * imgWidth;
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    unit: 'mm',
+                    format: [imgWidth, imgHeight],
+                    orientation: 'portrait'
+                });
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                const now = new Date();
+                const fecha = now.getFullYear() + '-' +
+                              String(now.getMonth()+1).padStart(2,'0') + '-' +
+                              String(now.getDate()).padStart(2,'0');
+                const hora = String(now.getHours()).padStart(2,'0') + '-' +
+                             String(now.getMinutes()).padStart(2,'0') + '-' +
+                             String(now.getSeconds()).padStart(2,'0');
+                const nombre = `bmstudio_${fecha}_${hora}.pdf`;
+                pdf.save(nombre);
+            }).catch(error => {
+                console.error('Error al generar PDF:', error);
+                alert('No se pudo generar el PDF.');
+            });
+        }
+
+        // --- Compartir imagen ---
+        function compartirImagen() {
+            capturarTicket().then(canvas => {
+                return new Promise((resolve, reject) => {
+                    canvas.toBlob(blob => {
+                        if (blob) resolve(blob);
+                        else reject(new Error('No se pudo crear la imagen'));
+                    }, 'image/png');
+                });
+            }).then(blob => {
+                const now = new Date();
+                const fecha = now.getFullYear() + '-' +
+                              String(now.getMonth()+1).padStart(2,'0') + '-' +
+                              String(now.getDate()).padStart(2,'0');
+                const hora = String(now.getHours()).padStart(2,'0') + '-' +
+                             String(now.getMinutes()).padStart(2,'0') + '-' +
+                             String(now.getSeconds()).padStart(2,'0');
+                const nombre = `bmstudio_${fecha}_${hora}.png`;
+
+                if (navigator.share) {
+                    const file = new File([blob], nombre, { type: 'image/png' });
+                    navigator.share({
+                        title: 'Factura BM Estudio',
+                        text: 'Factura de BM Estudio',
+                        files: [file]
+                    }).catch(err => {
+                        console.log('Compartir cancelado o error:', err);
+                        descargarYWhatsAppImagen(blob, nombre);
+                    });
+                } else {
+                    descargarYWhatsAppImagen(blob, nombre);
+                }
+            }).catch(error => {
+                console.error('Error al generar imagen:', error);
+                alert('No se pudo generar la imagen.');
+            });
+        }
+
+        function descargarYWhatsAppImagen(blob, nombre) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = nombre;
+            link.click();
+            URL.revokeObjectURL(link.href);
+
+            const mensaje = encodeURIComponent('Factura de BM Estudio (imagen)');
+            const numero = '50558306623';
+            window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
+        }
+
+        // --- Compartir PDF por WhatsApp ---
+        function compartirWhatsAppPDF() {
+            capturarTicket().then(canvas => {
+                const imgWidth = 80;
+                const imgHeight = (canvas.height / canvas.width) * imgWidth;
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    unit: 'mm',
+                    format: [imgWidth, imgHeight],
+                    orientation: 'portrait'
+                });
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                const pdfBlob = pdf.output('blob');
+                return pdfBlob;
+            }).then(blob => {
+                const now = new Date();
+                const fecha = now.getFullYear() + '-' +
+                              String(now.getMonth()+1).padStart(2,'0') + '-' +
+                              String(now.getDate()).padStart(2,'0');
+                const hora = String(now.getHours()).padStart(2,'0') + '-' +
+                             String(now.getMinutes()).padStart(2,'0') + '-' +
+                             String(now.getSeconds()).padStart(2,'0');
+                const nombre = `bmstudio_${fecha}_${hora}.pdf`;
+
+                if (navigator.share) {
+                    const file = new File([blob], nombre, { type: 'application/pdf' });
+                    navigator.share({
+                        title: 'Factura BM Estudio',
+                        text: 'Adjunto factura de BM Estudio',
+                        files: [file]
+                    }).catch(err => {
+                        console.log('Compartir PDF cancelado:', err);
+                        descargarYWhatsAppPDF(blob, nombre);
+                    });
+                } else {
+                    descargarYWhatsAppPDF(blob, nombre);
+                }
+            }).catch(error => {
+                console.error('Error al generar PDF para compartir:', error);
+                alert('No se pudo generar el PDF.');
+            });
+        }
+
+        function descargarYWhatsAppPDF(blob, nombre) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = nombre;
+            link.click();
+            URL.revokeObjectURL(link.href);
+
+            const mensaje = encodeURIComponent('Adjunto factura de BM Estudio (PDF)');
+            const numero = '50558306623';
+            window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank');
+        }
+
+        // --- Al cargar ---
+        window.onload = function() {
+            inicializarFilas(5);
+            setFechaActual();
+        };
+    </script>
+</body>
+</html>
